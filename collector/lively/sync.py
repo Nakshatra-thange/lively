@@ -7,6 +7,7 @@ import httpx
 from .config import CONCURRENCY, FAIL_DEACTIVATE_AFTER, HTTP_TIMEOUT, USER_AGENT
 from .db import pool
 from .normalize import content_hash, fingerprint
+from .polite.errors import Blocked
 from .sources import SOURCES
 
 log = logging.getLogger("lively.sync")
@@ -54,6 +55,8 @@ async def sync_company(client, company):
     source = SOURCES[source_name]
     try:
         raw = await source.fetch(client, slug)
+    except Blocked:
+        return {"blocked": 1}
     except Exception as exc:
         await record_failure(company_id, str(exc))
         return {"errors": 1}

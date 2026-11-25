@@ -3,6 +3,8 @@ import random
 
 import httpx
 
+from .polite.errors import Blocked
+
 
 def backoff(attempt):
     return min(30.0, 2.0 ** attempt) + random.random()
@@ -13,6 +15,8 @@ async def get_json(client, url, retries=3):
     for attempt in range(retries):
         try:
             resp = await client.get(url)
+        except Blocked:
+            raise
         except httpx.HTTPError as exc:
             last = exc
             await asyncio.sleep(backoff(attempt))

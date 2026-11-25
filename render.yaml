@@ -1,0 +1,83 @@
+databases:
+  - name: lively-db
+    plan: free
+    databaseName: lively
+    user: lively
+
+services:
+  - type: keyvalue
+    name: lively-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  - type: web
+    name: lively-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./collector/Dockerfile
+    dockerContext: ./collector
+    dockerCommand: sh -c "python -m lively.cli migrate && uvicorn lively.api.app:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lively-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lively-redis
+          property: connectionString
+      - key: CONCURRENCY
+        value: "4"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: USER_AGENT
+        value: "LivelyBot/0.1 (job liveness research)"
+
+  - type: worker
+    name: lively-worker
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./collector/Dockerfile
+    dockerContext: ./collector
+    dockerCommand: python -m lively.cli worker
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lively-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lively-redis
+          property: connectionString
+      - key: CONCURRENCY
+        value: "10"
+      - key: DOMAIN_RPS
+        value: "4"
+      - key: DOMAIN_BURST
+        value: "8"
+      - key: USER_AGENT
+        value: "LivelyBot/0.1 (job liveness research)"
+
+  - type: worker
+    name: lively-ghost
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./collector/Dockerfile
+    dockerContext: ./collector
+    dockerCommand: python -m lively.ghost loop --every 600
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lively-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lively-redis
+          property: connectionString
+      - key: CONCURRENCY
+        value: "2"

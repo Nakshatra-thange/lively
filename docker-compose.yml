@@ -1,3 +1,12 @@
+x-app-env: &app-env
+  DATABASE_URL: postgresql://lively:lively@db:5432/lively
+  REDIS_URL: redis://redis:6379/0
+  CONCURRENCY: "20"
+  USER_AGENT: "LivelyBot/0.1 (job liveness research)"
+  DOMAIN_RPS: "4"
+  DOMAIN_BURST: "8"
+  TIME_SCALE: "1"
+
 services:
   db:
     image: postgres:16-alpine
@@ -20,19 +29,79 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   collector:
     build: ./collector
-    environment:
-      DATABASE_URL: postgresql://lively:lively@db:5432/lively
-      CONCURRENCY: "20"
-      USER_AGENT: "LivelyBot/0.1 (job liveness research)"
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./collector:/app
+    command: ["sleep", "infinity"]
+
+  worker:
+    build: ./collector
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./collector:/app
+    command: ["python", "-m", "lively.cli", "worker"]
+    restart: unless-stopped
+    stop_grace_period: 40s
+
+  metrics:
+    build: ./collector
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./collector:/app
+    ports:
+      - "9100:9100"
+    command: ["python", "-m", "lively.cli", "serve-metrics", "--port", "9100"]
+    restart: unless-stopped
+  
+  ghost:
+    build: ./collector
+    environment: *app-env
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./collector:/app
-    command: ["sleep", "infinity"]
+    command: ["python", "-m", "lively.ghost", "loop", "--every", "600"]
+    restart: unless-stopped
+    
+  api:
+    build: ./collector
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./collector:/app
+      - ./web:/web:ro
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "lively.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
 
 volumes:
   pgdata:

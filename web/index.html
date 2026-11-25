@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lively 🌻 is this job still real?</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌻%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#fffdf6;--card:#fff;--line:#f1e8c9;--ink:#2a2412;--mute:#7d7456;--sun:#f6b800;--sun-d:#d99a00;--sun-l:#fff4c2;--live:#2e9e5b;--dead:#d64545;--ghost:#7a5af8;--repost:#2f7dd1;--unk:#8b8b8b;--warn:#e08a00}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--sun-d)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{position:sticky;top:0;z-index:5;background:rgba(255,253,246,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:18px;height:62px}
+.brand{display:flex;align-items:center;gap:8px;font-size:19px}
+.logo{font-size:26px}
+.tag{color:var(--mute);font-size:13px}
+nav{display:flex;gap:4px;margin-left:auto}
+nav button{border:0;background:none;padding:8px 13px;border-radius:999px;font:inherit;color:var(--mute);cursor:pointer}
+nav button:hover{background:var(--sun-l)}
+nav button.on{background:var(--sun);color:#2a2412;font-weight:600}
+.pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:#fff}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--unk)}
+.pill.ok i{background:var(--live);box-shadow:0 0 0 0 rgba(46,158,91,.5);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(46,158,91,0)}100%{box-shadow:0 0 0 0 rgba(46,158,91,0)}}
+main{padding:30px 0 60px}
+h1{font-size:34px;line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+h2{font-size:22px;margin:0 0 4px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:30px 0 10px}
+.mute{color:var(--mute)}
+.hero{text-align:center;padding:26px 0 8px}
+.hero p{margin:0 auto 20px;max-width:560px;color:var(--mute)}
+.search{display:flex;gap:10px;max-width:760px;margin:0 auto;background:#fff;border:2px solid var(--sun);border-radius:16px;padding:8px;box-shadow:0 8px 30px rgba(246,184,0,.18)}
+.search input{flex:1;border:0;outline:0;font:inherit;font-size:16px;padding:10px 12px;background:none;min-width:0}
+.btn{border:0;background:var(--sun);color:#2a2412;font:inherit;font-weight:700;padding:10px 22px;border-radius:11px;cursor:pointer}
+.btn:hover{background:var(--sun-d)}
+.btn.ghost{background:var(--sun-l)}
+.btn:disabled{opacity:.6;cursor:wait}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.kpi b{display:block;font-size:30px;line-height:1.1;letter-spacing:-.02em}
+.kpi span{color:var(--mute);font-size:13px}
+.kpi small{display:block;color:var(--mute);margin-top:6px;font-size:12px}
+.list{display:grid;gap:10px}
+.row{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:.15s}
+.row:hover{border-color:var(--sun);box-shadow:0 4px 16px rgba(246,184,0,.18)}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:600}
+.row .s{color:var(--mute);font-size:13px}
+.row ul{margin:6px 0 0;padding-left:18px;color:#4a432b;font-size:13px}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;color:#fff;white-space:nowrap}
+.chip.live{background:var(--live)}.chip.dead,.chip.closed{background:var(--dead)}.chip.ghost{background:var(--ghost)}.chip.repost,.chip.reposted{background:var(--repost)}.chip.unknown,.chip.uncertain,.chip.new,.chip.unscored{background:var(--unk)}.chip.suspect,.chip.probable{background:var(--warn)}
+.verdict{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+.big{font-size:44px;width:84px;height:84px;border-radius:22px;display:grid;place-items:center;color:#fff}
+.big.live{background:var(--live)}.big.dead{background:var(--dead)}.big.ghost{background:var(--ghost)}.big.repost{background:var(--repost)}.big.unknown{background:var(--unk)}.big.probable{background:var(--warn)}
+.meter{height:10px;background:#f4eed6;border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.meter i{display:block;height:100%;background:var(--sun);border-radius:99px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:14px}
+ul.plain{margin:8px 0 0;padding-left:18px}
+ul.plain li{margin:3px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mute);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid #f7f1d9;vertical-align:top}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--unk)}
+.dot.live{background:var(--live)}.dot.closed{background:var(--dead)}
+.bar2{display:grid;grid-template-columns:90px 1fr 56px;gap:10px;align-items:center;margin:7px 0;font-size:13px}
+.bar2 div{height:12px;background:#f6f0d9;border-radius:99px;overflow:hidden}
+.bar2 i{display:block;height:100%;border-radius:99px}
+.bar2 b{text-align:right}
+.spark{width:100%;height:80px;display:block;margin-top:10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.tabs button{border:1px solid var(--line);background:#fff;padding:6px 14px;border-radius:999px;font:inherit;cursor:pointer;color:var(--mute)}
+.tabs button.on{background:var(--sun);border-color:var(--sun);color:#2a2412;font-weight:600}
+.tabs .sp{flex:1}
+.err{background:#fdeaea;border:1px solid #f3c1c1;color:#a22b2b;padding:12px 16px;border-radius:12px;margin-top:16px}
+.busy{margin-top:18px;color:var(--mute)}
+.busy:before{content:"";display:inline-block;width:14px;height:14px;border:2px solid var(--sun);border-top-color:transparent;border-radius:50%;margin-right:8px;vertical-align:-2px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;right:18px;bottom:18px;background:#2a2412;color:#fff;padding:12px 16px;border-radius:12px;max-width:340px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:20}
+.toast b{color:var(--sun)}
+.matrix td,.matrix th{text-align:center}
+.matrix td.hit{background:var(--sun-l);font-weight:700}
+footer{color:var(--mute);font-size:12px;text-align:center;padding:30px 0}
+@media(max-width:700px){.tag{display:none}.verdict{grid-template-columns:1fr}.bar{flex-wrap:wrap;height:auto;padding:10px 0}nav{margin-left:0;width:100%;overflow-x:auto}h1{font-size:26px}}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <div class="brand"><span class="logo">🌻</span><b>Lively</b><span class="tag">is this job still real?</span></div>
+    <nav>
+      <button data-tab="check">Check a job</button>
+      <button data-tab="dashboard">Pipeline</button>
+      <button data-tab="caught">Caught today</button>
+      <button data-tab="accuracy">Accuracy</button>
+    </nav>
+    <span class="pill" id="pulse"><i></i><span id="pulse-text">connecting</span></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="view-check">
+    <div class="hero">
+      <h1>Is this job still real and open?</h1>
+      <p>Paste a job link for an instant verdict, or search a title or company from the tracked pipeline.</p>
+      <div class="search">
+        <input id="q" type="text" placeholder="https://boards.greenhouse.io/… or “backend engineer”" autocomplete="off" spellcheck="false">
+        <button class="btn" id="go">Check</button>
+      </div>
+      <div class="busy" id="busy" hidden></div>
+      <div class="err" id="err" hidden></div>
+    </div>
+    <div id="out"></div>
+    <h3 id="list-title">Try one of these</h3>
+    <div class="list" id="samples"></div>
+    <div style="text-align:center;margin-top:14px"><button class="btn ghost" id="shuffle">Show different jobs</button></div>
+  </section>
+
+  <section id="view-dashboard" hidden>
+    <h2>Pipeline</h2>
+    <p class="mute" style="margin:0 0 16px">Live view of the scheduler, workers and politeness layer. Refreshes every 3 seconds.</p>
+    <div id="dash"><p class="mute">Loading…</p></div>
+  </section>
+
+  <section id="view-caught" hidden>
+    <h2>Caught today</h2>
+    <p class="mute" style="margin:0 0 16px">Dead, ghost and reposted jobs the system flagged before they reached a user.</p>
+    <div class="tabs" id="kind-tabs">
+      <button data-kind="all" class="on">All</button>
+      <button data-kind="closed">Dead</button>
+      <button data-kind="ghost">Ghost</button>
+      <button data-kind="repost">Reposted</button>
+      <span class="sp"></span>
+      <button data-hours="24" class="on">24h</button>
+      <button data-hours="168">7d</button>
+      <button data-hours="87600">All time</button>
+    </div>
+    <div class="list" id="feed"><p class="mute">Loading…</p></div>
+  </section>
+
+  <section id="view-accuracy" hidden>
+    <h2>Accuracy</h2>
+    <p class="mute" style="margin:0 0 16px">Measured against a hand-labeled sample. The sample is stratified, so these are sample numbers, not population rates.</p>
+    <div id="acc"><p class="mute">Loading…</p></div>
+  </section>
+</main>
+
+<footer>Lively 🌻 job liveness and ghost detection · reads public ATS job boards only</footer>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const API = (window.LIVELY_API || "").replace(/\/$/, "");
+const $ = (s) => document.querySelector(s);
+const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ESC[c]);
+const num = (n) => Number(n || 0).toLocaleString();
+const pct = (x) => (x == null ? "–" : Math.round(x * 100) + "%");
+
+function ago(iso) {
+  if (!iso) return "never";
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return Math.floor(s) + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+}
+
+function inFuture(iso) {
+  if (!iso) return "–";
+  const s = (new Date(iso).getTime() - Date.now()) / 1000;
+  if (s <= 0) return "due now";
+  if (s < 3600) return "in " + Math.ceil(s / 60) + "m";
+  if (s < 86400) return "in " + Math.round(s / 3600) + "h";
+  return "in " + Math.round(s / 86400) + "d";
+}
+
+async function api(path, opts) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    let msg = res.statusText || "request failed";
+    try {
+      const body = await res.json();
+      if (body.detail) msg = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    } catch (e) {
+      msg = res.statusText || msg;
+    }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+function headline(d) {
+  const g = d.ghost || {};
+  if (d.verdict === "closed") {
+    if (d.state === "suspect") return { key: "probable", icon: "⚠️", label: "Probably closed" };
+    return { key: "dead", icon: "💀", label: "Dead" };
+  }
+  if (d.verdict === "live") {
+    if (g.label === "ghost") return { key: "ghost", icon: "👻", label: "Open, but a ghost risk" };
+    if (g.label === "repost") return { key: "repost", icon: "🔁", label: "Live, but reposted" };
+    return { key: "live", icon: "🌻", label: "Live" };
+  }
+  if (d.verdict === "uncertain") return { key: "unknown", icon: "❔", label: "Can't tell yet" };
+  return { key: "unknown", icon: "❔", label: "Not checked yet" };
+}
+
+function chipFor(item) {
+  if (item.state === "closed") return ["closed", "Dead"];
+  if (item.label === "ghost") return ["ghost", "Ghost"];
+  if (item.label === "repost" || item.state === "reposted") return ["repost", "Reposted"];
+  if (item.state === "suspect") return ["suspect", "Suspect"];
+  if (item.state === "new") return ["new", "New"];
+  return ["live", "Live"];
+}
+
+let current = "check";
+let pollTimer = null;
+const views = ["check", "dashboard", "caught", "accuracy"];
+
+function show(name) {
+  current = name;
+  views.forEach((v) => {
+    $("#view-" + v).hidden = v !== name;
+    document.querySelector('[data-tab="' + v + '"]').classList.toggle("on", v === name);
+  });
+  history.replaceState(null, "", "#" + name);
+  clearTimeout(pollTimer);
+  if (name === "dashboard") pollDashboard();
+  if (name === "caught") loadFeed();
+  if (name === "accuracy") loadAccuracy();
+}
+
+function setBusy(text) {
+  $("#busy").hidden = !text;
+  $("#busy").textContent = text || "";
+  $("#go").disabled = !!text;
+}
+
+function showError(msg) {
+  const el = $("#err");
+  el.hidden = !msg;
+  el.textContent = msg || "";
+}
+
+function renderRows(items) {
+  if (!items.length) return '<p class="mute">Nothing found.</p>';
+  return items
+    .map((it) => {
+      const [cls, label] = chipFor(it);
+      return (
+        '<div class="row" data-id="' + esc(it.id) + '">' +
+        '<span class="chip ' + cls + '">' + label + "</span>" +
+        '<div class="grow"><div class="t">' + esc(it.title) + "</div>" +
+        '<div class="s">' + esc(it.company) + (it.location ? " · " + esc(it.location) : "") + " · " + esc(it.source) + "</div></div>" +
+        '<span class="mute">›</span></div>'
+      );
+    })
+    .join("");
+}
+
+async function loadSamples() {
+  try {
+    const d = await api("/search?q=&limit=6");
+    $("#list-title").textContent = "Try one of these";
+    $("#samples").innerHTML = renderRows(d.items);
+  } catch (e) {
+    $("#samples").innerHTML = '<p class="mute">The API is waking up. Try again in a few seconds.</p>';
+  }
+}
+
+async function runSearch(q) {
+  const d = await api("/search?q=" + encodeURIComponent(q) + "&limit=12");
+  $("#list-title").textContent = d.items.length + " result" + (d.items.length === 1 ? "" : "s") + " for “" + q + "”";
+  $("#samples").innerHTML = renderRows(d.items);
+  $("#out").innerHTML = "";
+}
+
+async function runCheck(url) {
+  setBusy("Checking the job page, the company's board and the ATS API…");
+  try {
+    const d = await api("/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    renderVerdict(d);
+  } finally {
+    setBusy("");
+  }
+}
+
+async function openJob(id) {
+  setBusy("Loading…");
+  try {
+    const d = await api("/jobs/" + id + "/status");
+    renderVerdict(d);
+    $("#out").scrollIntoView({ behavior: "smooth", block: "start" });
+  } finally {
+    setBusy("");
+  }
+}
+
+async function submit() {
+  showError("");
+  const v = $("#q").value.trim();
+  try {
+    if (!v) {
+      $("#out").innerHTML = "";
+      await loadSamples();
+    } else if (/^https?:\/\//i.test(v)) {
+      await runCheck(v);
+    } else {
+      await runSearch(v);
+    }
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+function renderVerdict(d) {
+  const h = headline(d);
+  const conf = Math.round((d.confidence || 0) * 100);
+  const g = d.ghost;
+  const reasons = (d.reasons || []).map((r) => "<li>" + esc(r) + "</li>").join("");
+  const signals = (d.signals || [])
+    .map(
+      (s) =>
+        "<tr><td>" + esc(s.checker) + '</td><td><span class="dot ' + esc(s.verdict) + '"></span>' + esc(s.verdict) +
+        "</td><td>" + Math.round((s.confidence || 0) * 100) + "%</td><td>" + esc(s.reason) + "</td></tr>"
+    )
+    .join("");
+  const events = (d.events || [])
+    .map(
+      (e) =>
+        "<li><b>" + esc(e.from_state || "start") + " → " + esc(e.to_state) + "</b> · " + ago(e.created_at) +
+        (e.reason ? '<br><span class="mute">' + esc(e.reason) + "</span>" : "") + "</li>"
+    )
+    .join("");
+  let ghostCard = "";
+  if (g && g.score != null) {
+    const gr = (g.reasons || []).map((r) => "<li>" + esc(r) + "</li>").join("");
+    ghostCard =
+      '<div class="card"><h3 style="margin-top:0">Ghost risk</h3><b style="font-size:26px">' + Math.round(g.score * 100) +
+      '%</b><div class="meter"><i style="width:' + Math.round(g.score * 100) + '%;background:var(--ghost)"></i></div>' +
+      (gr ? '<ul class="plain">' + gr + "</ul>" : '<p class="mute" style="margin:8px 0 0">No ghost signals. This looks like a fresh, unique listing.</p>') +
+      (g.repost_count ? '<p class="mute" style="margin:10px 0 0">Relisted ' + esc(g.repost_count) + " time(s) · " + esc(g.family_size) + " listings of this role</p>" : "") +
+      "</div>";
+  } else if (!d.known) {
+    ghostCard = '<div class="card"><h3 style="margin-top:0">Ghost risk</h3><p class="mute" style="margin:0">This link is not in the tracked pipeline, so repost history and ghost scoring are not available. The liveness verdict above is still live.</p></div>';
+  }
+  const sched = d.schedule
+    ? '<div class="card"><h3 style="margin-top:0">Schedule</h3><table><tr><td>Last checked</td><td>' + ago(d.schedule.last_checked_at) +
+      "</td></tr><tr><td>Next check</td><td>" + inFuture(d.schedule.next_check_at) +
+      "</td></tr><tr><td>Re-check interval</td><td>" + Math.round((d.schedule.interval_seconds || 0) / 3600) + "h</td></tr><tr><td>Checks so far</td><td>" +
+      num(d.schedule.checks) + "</td></tr><tr><td>First seen</td><td>" + ago(d.schedule.first_seen_at) + "</td></tr></table></div>"
+    : "";
+  $("#out").innerHTML =
+    '<div class="card"><div class="verdict"><div class="big ' + h.key + '">' + h.icon + "</div><div>" +
+    '<div class="mute" style="font-size:13px">' + esc(d.company || "") + (d.source && d.source !== "unknown" ? " · " + esc(d.source) : "") + "</div>" +
+    '<h2 style="margin:2px 0 4px">' + esc(d.title || d.url) + "</h2>" +
+    '<span class="chip ' + h.key + '" style="font-size:14px;padding:3px 14px">' + h.label + "</span>" +
+    '<div class="meter" style="max-width:360px"><i style="width:' + conf + '%"></i></div>' +
+    '<div class="mute" style="font-size:13px">' + conf + "% confident · checked " + ago(d.checked_at) +
+    ' · <a href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer">open job page</a>' +
+    (d.known ? ' · <a href="#" id="recheck">re-check now</a>' : "") + "</div></div></div>" +
+    '<h3>Why</h3><ul class="plain" style="margin-top:0">' + reasons + "</ul></div>" +
+    '<div class="cols">' + ghostCard + sched + "</div>" +
+    (signals
+      ? '<div class="card" style="margin-top:14px;overflow-x:auto"><h3 style="margin-top:0">Signals</h3><table><tr><th>Checker</th><th>Verdict</th><th>Strength</th><th>Reason</th></tr>' + signals + "</table></div>"
+      : "") +
+    (events ? '<div class="card" style="margin-top:14px"><h3 style="margin-top:0">History</h3><ul class="plain">' + events + "</ul></div>" : "");
+  const again = $("#recheck");
+  if (again) {
+    again.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      showError("");
+      try {
+        await runCheck(d.url);
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+  }
+}
+
+function spark(values) {
+  if (values.length < 2) return "";
+  const w = 600;
+  const h = 80;
+  const max = Math.max(...values, 1);
+  const pts = values
+    .map((v, i) => ((i / (values.length - 1)) * w).toFixed(1) + "," + (h - 4 - (v / max) * (h - 12)).toFixed(1))
+    .join(" ");
+  return (
+    '<svg viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none" class="spark">' +
+    '<polygon points="0,' + h + " " + pts + " " + w + "," + h + '" fill="rgba(246,184,0,.2)"/>' +
+    '<polyline points="' + pts + '" fill="none" stroke="#d99a00" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>'
+  );
+}
+
+function bars(obj, colors) {
+  const entries = Object.entries(obj || {});
+  if (!entries.length) return '<p class="mute">No data yet.</p>';
+  const max = Math.max(1, ...entries.map((e) => e[1]));
+  return entries
+    .map(
+      ([k, n]) =>
+        '<div class="bar2"><span>' + esc(k) + '</span><div><i style="width:' + ((n / max) * 100).toFixed(1) +
+        "%;background:" + (colors[k] || "#f6b800") + '"></i></div><b>' + num(n) + "</b></div>"
+    )
+    .join("");
+}
+
+const STATE_COLORS = { live: "#2e9e5b", new: "#f6b800", suspect: "#e08a00", closed: "#d64545", reposted: "#2f7dd1" };
+const LABEL_COLORS = { live: "#2e9e5b", closed: "#d64545", ghost: "#7a5af8", repost: "#2f7dd1", unscored: "#b7b7b7" };
+let history_ = [];
+let lastSample = null;
+
+function renderDashboard(s) {
+  const t = s.throughput;
+  const q = s.queue;
+  const c = s.caught;
+  const v = s.savings;
+  const r = s.reliability;
+  const total = Object.values(s.states || {}).reduce((a, b) => a + b, 0);
+  const now = Date.now();
+  if (lastSample) {
+    const dt = (now - lastSample.t) / 1000;
+    if (dt > 0) {
+      history_.push(Math.max(0, ((t.checks_total - lastSample.n) / dt) * 60));
+      if (history_.length > 40) history_.shift();
+    }
+  }
+  lastSample = { t: now, n: t.checks_total };
+  const errs = Object.values(r.worker_errors || {}).reduce((a, b) => a + b, 0);
+  const circuits = (s.open_circuits || []).length
+    ? s.open_circuits.map((h) => '<span class="chip closed" style="margin:0 6px 6px 0">' + esc(h) + "</span>").join("")
+    : '<span class="mute">None. Every domain is healthy.</span>';
+  const domains = Object.entries(s.domains || {})
+    .map(
+      ([h, d]) =>
+        "<tr><td>" + esc(h) + "</td><td>" + num(d.requests) + "</td><td>" + num(d.errors) + "</td><td>" + num(d.trips) +
+        "</td><td>" + num(d.robots_blocked) + "</td><td>" + num(d.circuit_blocked) + "</td></tr>"
+    )
+    .join("");
+  $("#dash").innerHTML =
+    '<div class="grid kpis">' +
+    '<div class="card kpi"><span>Jobs tracked</span><b>' + num(total) + "</b><small>" + num(q.companies_total) + " company boards</small></div>" +
+    '<div class="card kpi"><span>Checks per minute</span><b>' + num(t.checks_per_minute) + "</b><small>" + num(t.checks_total) + " since start</small></div>" +
+    '<div class="card kpi"><span>Queue depth</span><b>' + num(q.due) + "</b><small>" + num(q.leased) + " in flight · " + num(q.orphaned) + " orphaned</small></div>" +
+    '<div class="card kpi"><span>Closures caught</span><b>' + num(c.closures_total) + "</b><small>" + num(c.closed_24h) + " closed · " + num(c.suspect_24h) + " suspect in 24h</small></div>" +
+    '<div class="card kpi"><span>Re-checks saved vs daily</span><b>' + v.saved_pct_projected + "%</b><small>" + num(v.adaptive_per_day) + "/day vs " + num(v.naive_per_day) + "/day · actual " + v.saved_pct_actual + "%</small></div>" +
+    "</div>" +
+    '<div class="card" style="margin-top:14px"><h3 style="margin-top:0">Checks per minute, live</h3>' + (spark(history_) || '<p class="mute">Collecting samples…</p>') + "</div>" +
+    '<div class="grid two" style="margin-top:14px">' +
+    '<div class="card"><h3 style="margin-top:0">Jobs by lifecycle state</h3>' + bars(s.states, STATE_COLORS) + "</div>" +
+    '<div class="card"><h3 style="margin-top:0">Adaptive re-check intervals</h3>' + bars(s.intervals, {}) + "</div>" +
+    '<div class="card"><h3 style="margin-top:0">Predicted labels</h3>' + bars(s.labels, LABEL_COLORS) + "</div>" +
+    '<div class="card"><h3 style="margin-top:0">Reliability</h3><table>' +
+    "<tr><td>Jobs reclaimed from dead workers</td><td><b>" + num(r.reclaimed) + "</b></td></tr>" +
+    "<tr><td>Stale results discarded</td><td><b>" + num(r.lost_leases) + "</b></td></tr>" +
+    "<tr><td>Checks deferred (blocked or throttled)</td><td><b>" + num(r.deferred) + "</b></td></tr>" +
+    "<tr><td>Worker task errors</td><td><b>" + num(errs) + "</b></td></tr></table>" +
+    '<h3>Open circuit breakers</h3>' + circuits + "</div></div>" +
+    '<div class="card" style="margin-top:14px;overflow-x:auto"><h3 style="margin-top:0">Per-domain traffic</h3>' +
+    (domains ? "<table><tr><th>Domain</th><th>Requests</th><th>Errors</th><th>Trips</th><th>Robots blocked</th><th>Circuit blocked</th></tr>" + domains + "</table>" : '<p class="mute">No traffic recorded yet.</p>') +
+    "</div>";
+}
+
+async function pollDashboard() {
+  clearTimeout(pollTimer);
+  if (current !== "dashboard") return;
+  if (!document.hidden) {
+    try {
+      renderDashboard(await api("/dashboard"));
+    } catch (e) {
+      $("#dash").innerHTML = '<div class="err">' + esc(e.message) + "</div>";
+    }
+  }
+  pollTimer = setTimeout(pollDashboard, 3000);
+}
+
+let feedKind = "all";
+let feedHours = 24;
+
+async function loadFeed() {
+  try {
+    const d = await api("/feed?kind=" + feedKind + "&hours=" + feedHours + "&limit=40");
+    if (!d.items.length) {
+      $("#feed").innerHTML = '<p class="mute">Nothing caught in this window yet. Workers flag dead jobs as they re-check them, so try a wider range.</p>';
+      return;
+    }
+    $("#feed").innerHTML = d.items
+      .map((it) => {
+        const cls = it.kind === "closed" ? "closed" : it.kind;
+        const label = { closed: "Dead", ghost: "Ghost", repost: "Reposted" }[it.kind];
+        const reasons = (it.reasons || []).slice(0, 3).map((r) => "<li>" + esc(r) + "</li>").join("");
+        return (
+          '<div class="row" data-id="' + esc(it.id) + '"><span class="chip ' + cls + '">' + label + "</span>" +
+          '<div class="grow"><div class="t">' + esc(it.title) + "</div>" +
+          '<div class="s">' + esc(it.company) + " · " + ago(it.at) + (it.score != null ? " · risk " + Math.round(it.score * 100) + "%" : "") + "</div>" +
+          (reasons ? "<ul>" + reasons + "</ul>" : "") + '</div><span class="mute">›</span></div>'
+        );
+      })
+      .join("");
+  } catch (e) {
+    $("#feed").innerHTML = '<div class="err">' + esc(e.message) + "</div>";
+  }
+}
+
+async function loadAccuracy() {
+  try {
+    const d = await api("/evaluation");
+    if (!d.total) {
+      $("#acc").innerHTML = '<div class="card"><p class="mute" style="margin:0">No hand-labeled jobs yet. Run the labeling helper, then reload.</p></div>';
+      return;
+    }
+    const classes = ["live", "closed", "ghost", "repost"];
+    const rows = classes
+      .map((c) => {
+        const m = d.per_class[c];
+        return "<tr><td><span class=\"chip " + c + "\">" + c + "</span></td><td>" + pct(m.precision) + "</td><td>" + pct(m.recall) + "</td><td>" + pct(m.f1) + "</td><td>" + m.support + "</td></tr>";
+      })
+      .join("");
+    const matrix = classes
+      .map(
+        (a) =>
+          "<tr><th>" + a + "</th>" + classes.map((p) => '<td class="' + (a === p ? "hit" : "") + '">' + d.matrix[a][p] + "</td>").join("") + "</tr>"
+      )
+      .join("");
+    const b = d.bad_filter;
+    $("#acc").innerHTML =
+      '<div class="grid kpis">' +
+      '<div class="card kpi"><span>Labeled jobs</span><b>' + d.total + "</b></div>" +
+      '<div class="card kpi"><span>Accuracy</span><b>' + pct(d.accuracy) + "</b></div>" +
+      '<div class="card kpi"><span>Bad-job filter precision</span><b>' + pct(b.precision) + "</b><small>flagged jobs that really were dead or ghost</small></div>" +
+      '<div class="card kpi"><span>Bad-job filter recall</span><b>' + pct(b.recall) + "</b><small>dead or ghost jobs it caught</small></div></div>" +
+      '<div class="grid two" style="margin-top:14px">' +
+      '<div class="card"><h3 style="margin-top:0">Per class</h3><table><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr>' + rows + "</table></div>" +
+      '<div class="card"><h3 style="margin-top:0">Confusion matrix</h3><table class="matrix"><tr><th>label ↓ / predicted →</th>' +
+      classes.map((c) => "<th>" + c + "</th>").join("") + "</tr>" + matrix + "</table></div></div>";
+  } catch (e) {
+    $("#acc").innerHTML = '<div class="err">' + esc(e.message) + "</div>";
+  }
+}
+
+let toastTimer = null;
+
+function toast(html) {
+  const el = $("#toast");
+  el.innerHTML = html;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (el.hidden = true), 6000);
+}
+
+function startStream() {
+  if (!window.EventSource) return;
+  const es = new EventSource(API + "/events?state=closed");
+  es.onopen = () => {
+    $("#pulse").classList.add("ok");
+    $("#pulse-text").textContent = "live stream";
+  };
+  es.onerror = () => {
+    $("#pulse").classList.remove("ok");
+    $("#pulse-text").textContent = "reconnecting";
+  };
+  es.addEventListener("job.closed", (e) => {
+    const d = JSON.parse(e.data);
+    toast("<b>Job closed</b><br>" + esc(d.title) + " · " + esc(d.company));
+    if (current === "caught") loadFeed();
+  });
+}
+
+document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => show(b.dataset.tab)));
+$("#go").addEventListener("click", submit);
+$("#q").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submit();
+});
+$("#shuffle").addEventListener("click", () => {
+  $("#q").value = "";
+  loadSamples();
+});
+document.addEventListener("click", (e) => {
+  const row = e.target.closest(".row[data-id]");
+  if (!row) return;
+  if (current !== "check") show("check");
+  showError("");
+  openJob(row.dataset.id).catch((err) => showError(err.message));
+});
+$("#kind-tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.kind) feedKind = b.dataset.kind;
+  if (b.dataset.hours) feedHours = Number(b.dataset.hours);
+  document.querySelectorAll("#kind-tabs button").forEach((x) => {
+    if (x.dataset.kind) x.classList.toggle("on", x.dataset.kind === feedKind);
+    if (x.dataset.hours) x.classList.toggle("on", Number(x.dataset.hours) === feedHours);
+  });
+  loadFeed();
+});
+
+const start = location.hash.slice(1);
+show(views.includes(start) ? start : "check");
+loadSamples();
+startStream();
+</script>
+</body>
+</html>

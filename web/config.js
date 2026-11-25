@@ -1,0 +1,1 @@
+window.LIVELY_API = "https://lively-api.onrender.com";
