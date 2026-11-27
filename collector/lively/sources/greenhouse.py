@@ -15,10 +15,9 @@ class Greenhouse(Source):
             return data["name"]
         return None
 
-    async def fetch(self, client, slug):
-        data = await get_json(
-            client, f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
-        )
+    async def fetch(self, client, slug, content=True):
+        suffix = "?content=true" if content else ""
+        data = await get_json(client, f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs{suffix}")
         if data is None:
             return None
         out = []

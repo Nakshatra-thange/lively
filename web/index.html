@@ -454,7 +454,7 @@ function renderDashboard(s) {
     '<div class="card kpi"><span>Checks per minute</span><b>' + num(t.checks_per_minute) + "</b><small>" + num(t.checks_total) + " since start</small></div>" +
     '<div class="card kpi"><span>Queue depth</span><b>' + num(q.due) + "</b><small>" + num(q.leased) + " in flight · " + num(q.orphaned) + " orphaned</small></div>" +
     '<div class="card kpi"><span>Closures caught</span><b>' + num(c.closures_total) + "</b><small>" + num(c.closed_24h) + " closed · " + num(c.suspect_24h) + " suspect in 24h</small></div>" +
-    '<div class="card kpi"><span>Re-checks saved vs daily</span><b>' + v.saved_pct_projected + "%</b><small>" + num(v.adaptive_per_day) + "/day vs " + num(v.naive_per_day) + "/day · actual " + v.saved_pct_actual + "%</small></div>" +
+    '<div class="card kpi"><span>Re-checks saved vs daily</span><b>' + Math.max(0, v.saved_pct_projected) + "%</b><small>steady-state projection · " + num(v.adaptive_per_day) + "/day vs " + num(v.naive_per_day) + "/day · actual " + (v.ramping ? "ramping up" : Math.max(0, v.saved_pct_actual) + "%") + "</small></div>" +
     "</div>" +
     '<div class="card" style="margin-top:14px"><h3 style="margin-top:0">Checks per minute, live</h3>' + (spark(history_) || '<p class="mute">Collecting samples…</p>') + "</div>" +
     '<div class="grid two" style="margin-top:14px">' +

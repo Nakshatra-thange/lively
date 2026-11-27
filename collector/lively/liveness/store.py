@@ -74,6 +74,17 @@ async def find_job(url, source, slug, external_id):
     return JobRef(*row) if row else None
 
 
+async def find_by_external_host(external_id, host):
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            JOB_SELECT
+            + " WHERE j.external_id = %s AND lower(substring(j.url from '^https?://([^/:?#]+)')) = %s LIMIT 1",
+            (external_id, host),
+        )
+        row = await cur.fetchone()
+    return JobRef(*row) if row else None
+
+
 async def due_jobs(states, limit):
     async with pool.connection() as conn:
         cur = await conn.execute(

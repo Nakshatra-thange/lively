@@ -4,6 +4,7 @@ import httpx
 
 from .. import metrics
 from ..config import USER_AGENT
+from ..redisx import get_redis
 from .breaker import Breaker
 from .errors import CircuitOpen, RobotsDisallowed
 from .limiter import Limiter
@@ -47,7 +48,16 @@ class PoliteTransport(httpx.AsyncBaseTransport):
             raise
 
         status = response.status_code
-        if status == 429 or status >= 500:
+        if status == 429:
+            r = get_redis()
+            count = await r.incr(f"pen:{host}:n")
+            await r.expire(f"pen:{host}:n", 600)
+            wait = _retry_after(response)
+            if wait is None:
+                wait = min(60.0, 2.0 ** min(max(count, 1), 6)) + random.random()
+            await self.limiter.penalize(host, wait)
+            await metrics.count_request(host, True)
+        elif status >= 500:
             count = await self.breaker.failure(host)
             wait = _retry_after(response)
             if wait is None:

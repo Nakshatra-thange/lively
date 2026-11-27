@@ -216,6 +216,7 @@ async def snapshot():
             "saved_pct_actual": (
                 round(100.0 * (1.0 - actual / naive_equivalent), 1) if naive_equivalent else 0.0
             ),
+            "ramping": elapsed < 3 * 86400,
         },
         "reliability": {
             "reclaimed": int(reclaimed or 0),

@@ -18,7 +18,10 @@ class BoardCache:
             if hit and time.monotonic() - hit[0] < self.ttl:
                 return hit[1], hit[2]
             try:
-                raw = await SOURCES[source].fetch(client, slug)
+                if source == "greenhouse":
+                    raw = await SOURCES[source].fetch(client, slug, content=False)
+                else:
+                    raw = await SOURCES[source].fetch(client, slug)
             except Exception:
                 return "error", set()
             if raw is None:

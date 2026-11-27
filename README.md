@@ -2,8 +2,6 @@
 
 Is this job still real and open? Lively answers that for any job link, keeps the answer fresh across tens of thousands of jobs without checking them all daily, and flags dead, reposted and ghost listings with plain-language reasons.
 
-**Live demo:** https://YOUR-APP.vercel.app  ·  **API docs:** https://YOUR-API.onrender.com/docs
-
 ## In short
 
 - **What I built:** a service that tracks 12,000+ jobs from 66 company job boards (Greenhouse, Lever, Ashby) and tells you whether each one is still open.
@@ -62,6 +60,8 @@ From `lively.cli metrics` and `lively.ghost eval`.
 | ghost | 0.00 | 0.00 |
 | repost | 0.07 | 0.04 |
 
+Closed labels were cross-checked against the same ATS APIs the system uses, so closed precision is optimistic.
+
 The labeled set is stratified on purpose, so these are sample numbers, not population rates. Live/closed labels were cross-checked against the ATS APIs; ghost vs repost is a judgment call where the scorer and the labels still disagree (most hand-labeled reposts score as ghosts), which is the next thing to tune. Labels live in `collector/seeds/labels.csv`.
 
 ## Run it
@@ -80,7 +80,7 @@ The labeled set is stratified on purpose, so these are sample numbers, not popul
 - Ashby and Workable have no single-job API check, so they lean on board listing.
 - `board_listing` re-fetches whole boards, which will not scale to thousands of boards.
 - Repost matching is per company. The same role on two boards is not merged.
-- Ghost scoring weights are hand-tuned against 200 labels, not learned.
+- Ghost scoring weights are hand-tuned against 100 labels, not learned.
 - The free hosting tier sleeps when idle.
 
 ## What I would build next at Elip

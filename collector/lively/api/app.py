@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from .. import metrics
 from ..db import pool
 from ..ghost.evaluate import metrics as eval_metrics
-from ..liveness import Engine, store
+from ..liveness import Engine
 from ..liveness.boards import BoardCache
 from ..liveness.resolve import resolve
 from ..polite.client import make_polite_client
@@ -40,8 +40,9 @@ async def cached(key, ttl, fn):
 
 
 async def limited(request, bucket, limit):
-    forwarded = request.headers.get("x-forwarded-for", "")
-    ip = forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+    ip = request.client.host if request.client else "unknown"
+    if os.getenv("TRUST_PROXY") == "1":
+        ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or ip
     r = get_redis()
     key = f"api:{bucket}:{ip}:{int(time.time() // 60)}"
     n = await r.incr(key)
@@ -133,7 +134,6 @@ async def check(body: CheckRequest, request: Request):
         "events": [],
     }
     if job.id is not None:
-        await store.save_result(job, result)
         base = await queries.job_status(job.id)
         if base:
             payload.update(base)
