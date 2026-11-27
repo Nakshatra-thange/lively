@@ -67,11 +67,13 @@ The labeled set is stratified on purpose, so these are sample numbers, not popul
 ## Run it
 
     docker compose up -d --build --scale worker=3
-    docker compose exec collector python -m lively.cli seed seeds/boards.csv
-    docker compose exec collector python -m lively.cli discover seeds/candidates.txt
-    docker compose exec collector python -m lively.cli sync
+    docker compose run --rm bootstrap            # first run only: seed, discover, initial sync
     docker compose exec collector python -m lively.ghost scan
     open http://localhost:8000
+
+`up` runs a one-shot `migrate` service first; the worker, API, metrics and ghost services start only after it exits successfully. Migrations are tracked in `schema_migrations` and are safe to re-run.
+
+`bootstrap` is opt-in (it is not started by `up`). It records completion in `app_state` and does nothing on later runs. On a database that already has companies it only records that, without seeding or syncing. `--force` re-runs the steps, which only add rows. The individual `seed`, `discover` and `sync` commands still work as before.
 
 ## Known limits
 
@@ -90,3 +92,11 @@ The labeled set is stratified on purpose, so these are sample numbers, not popul
 3. A learned ghost model trained on the labeled set, with the current score as a feature.
 4. Push the `job.closed` stream into the matcher so closed jobs are pulled from queued emails before they send.
 5. Per-ATS closed-page fixtures and a regression suite for the soft-404 rules.
+
+
+
+- https://job-boards.greenhouse.io/vercel/jobs/6188898004
+- https://amazon.jobs/en/jobs/10612415/software-development-engineer-intern-2027-beijing
+- https://www.micro1.ai/experts/opportunities
+
+

@@ -6,3 +6,4 @@ pgdata/
 .idea/
 SCRIPT.md
 .vscode/
+collector/lively.egg-info

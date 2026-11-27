@@ -1,6 +1,6 @@
 import redis.asyncio as aioredis
 
-from .config import REDIS_URL
+from .config import REDIS_TIMEOUT, REDIS_URL
 
 _client = None
 _scripts = {}
@@ -9,7 +9,14 @@ _scripts = {}
 def get_redis():
     global _client
     if _client is None:
-        _client = aioredis.from_url(REDIS_URL, decode_responses=True)
+        # Bounded timeouts: a stalled Redis must surface as an error, not hang a
+        # consumer forever while the heartbeat keeps renewing its leases.
+        _client = aioredis.from_url(
+            REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=REDIS_TIMEOUT,
+            socket_timeout=REDIS_TIMEOUT,
+        )
     return _client
 
 

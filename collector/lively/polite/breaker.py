@@ -1,3 +1,5 @@
+from redis.exceptions import RedisError
+
 from ..config import (
     BREAKER_MAX_OPEN_SECONDS,
     BREAKER_OPEN_SECONDS,
@@ -5,7 +7,7 @@ from ..config import (
     BREAKER_WINDOW,
 )
 from ..redisx import get_redis
-from .errors import CircuitOpen
+from .errors import CircuitOpen, PolitenessUnavailable
 
 
 class Breaker:
@@ -23,11 +25,17 @@ class Breaker:
 
     async def before(self, host):
         r = get_redis()
-        opened, tripped = await r.mget(f"cb:{host}:open", f"cb:{host}:trips")
+        try:
+            opened, tripped = await r.mget(f"cb:{host}:open", f"cb:{host}:trips")
+            got = None
+            if not opened and tripped:
+                got = await r.set(f"cb:{host}:probe", "1", nx=True, px=15000)
+        except RedisError as exc:
+            # Fail closed: an unknown breaker state must not be treated as closed.
+            raise PolitenessUnavailable(f"circuit breaker unavailable for {host}: {exc}") from exc
         if opened:
             raise CircuitOpen(f"circuit open for {host}")
         if tripped:
-            got = await r.set(f"cb:{host}:probe", "1", nx=True, px=15000)
             if not got:
                 raise CircuitOpen(f"circuit half-open for {host}")
             return True

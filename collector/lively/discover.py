@@ -1,11 +1,13 @@
 import asyncio
+import contextlib
 import logging
 import re
+from collections import Counter
 
-import httpx
-
-from .config import CONCURRENCY, HTTP_TIMEOUT, USER_AGENT
+from .config import CONCURRENCY
 from .db import pool
+from .polite.client import make_polite_client
+from .polite.errors import Blocked
 from .sources import SOURCES
 
 log = logging.getLogger("lively.discover")
@@ -19,24 +21,26 @@ def slug_variants(name):
     return list(dict.fromkeys(["".join(parts), "-".join(parts)]))
 
 
-async def run_discover(path, concurrency=CONCURRENCY):
+async def run_discover(path, concurrency=CONCURRENCY, client=None):
     with open(path, encoding="utf-8") as f:
         names = [line.strip() for line in f if line.strip()]
 
     sem = asyncio.Semaphore(concurrency)
     found = []
+    blocked = Counter()
 
-    async with httpx.AsyncClient(
-        timeout=HTTP_TIMEOUT,
-        headers={"User-Agent": USER_AGENT},
-        follow_redirects=True,
-        limits=httpx.Limits(max_connections=concurrency * 2),
-    ) as client:
+    # Same politeness controls (SSRF guard, robots, limiter, breaker) as the worker.
+    session = make_polite_client(concurrency) if client is None else contextlib.nullcontext(client)
+    async with session as client:
 
         async def probe(name, slug, source):
             async with sem:
                 try:
                     label = await source.probe(client, slug)
+                except Blocked as exc:
+                    # Not "no board here": we could not ask. Never recorded as absent.
+                    blocked[type(exc).__name__] += 1
+                    return
                 except Exception:
                     return
             if label:
@@ -64,3 +68,9 @@ async def run_discover(path, concurrency=CONCURRENCY):
                     found,
                 )
     log.info("discovered %d boards", len(found))
+    if blocked:
+        log.warning(
+            "%d probes were blocked by politeness controls %s; those candidates were not "
+            "checked, rerun discover later", sum(blocked.values()), dict(blocked),
+        )
+    return len(found)

@@ -24,6 +24,7 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -34,11 +35,41 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build: ./collector
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./collector:/app
+    command: ["python", "-m", "lively.cli", "migrate"]
+    restart: "no"
+
+  bootstrap:
+    profiles: ["init"]
+    build: ./collector
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./collector:/app
+    command: ["python", "-m", "lively.cli", "bootstrap"]
+    restart: "no"
 
   collector:
     build: ./collector
     environment: *app-env
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -51,6 +82,8 @@ services:
     build: ./collector
     environment: *app-env
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -65,6 +98,8 @@ services:
     build: ./collector
     environment: *app-env
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -80,6 +115,8 @@ services:
     build: ./collector
     environment: *app-env
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
     volumes:
@@ -91,6 +128,8 @@ services:
     build: ./collector
     environment: *app-env
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:

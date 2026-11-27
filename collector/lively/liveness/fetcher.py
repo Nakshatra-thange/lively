@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 
 import httpx
 
-from ..config import USER_AGENT
 from .models import FetchResult
 
 MAX_BYTES = 600_000
@@ -13,23 +12,6 @@ TOTAL_TIMEOUT = 25.0
 HOST_LIMIT = 6
 
 _host_sems = defaultdict(lambda: asyncio.Semaphore(HOST_LIMIT))
-
-
-def make_client(concurrency):
-    return httpx.AsyncClient(
-        timeout=httpx.Timeout(connect=6.0, read=15.0, write=10.0, pool=30.0),
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "text/html,application/json;q=0.9,*/*;q=0.5",
-            "Accept-Language": "en",
-        },
-        follow_redirects=True,
-        max_redirects=6,
-        limits=httpx.Limits(
-            max_connections=concurrency * 2,
-            max_keepalive_connections=concurrency,
-        ),
-    )
 
 
 def _retry_after(value):

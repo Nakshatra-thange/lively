@@ -84,6 +84,12 @@ td{padding:7px 8px;border-bottom:1px solid #f7f1d9;vertical-align:top}
 .toast b{color:var(--sun)}
 .matrix td,.matrix th{text-align:center}
 .matrix td.hit{background:var(--sun-l);font-weight:700}
+.acc-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.pill.wip i{background:var(--warn)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.note{margin:12px 0 0;font-size:12px;color:var(--mute)}
+.method ol{margin:8px 0 0;padding-left:20px}
+.method li{margin:4px 0}
 footer{color:var(--mute);font-size:12px;text-align:center;padding:30px 0}
 @media(max-width:700px){.tag{display:none}.verdict{grid-template-columns:1fr}.bar{flex-wrap:wrap;height:auto;padding:10px 0}nav{margin-left:0;width:100%;overflow-x:auto}h1{font-size:26px}}
 </style>
@@ -144,8 +150,8 @@ footer{color:var(--mute);font-size:12px;text-align:center;padding:30px 0}
   </section>
 
   <section id="view-accuracy" hidden>
-    <h2>Accuracy</h2>
-    <p class="mute" style="margin:0 0 16px">Measured against a hand-labeled sample. The sample is stratified, so these are sample numbers, not population rates.</p>
+    <div class="acc-head"><h2>Accuracy</h2><span class="pill wip"><i></i>Validation in progress</span></div>
+    <p class="mute" style="margin:0 0 16px">How Lively's predictions compare with manually reviewed job listings. Published benchmarks will follow once the labeling process is validated.</p>
     <div id="acc"><p class="mute">Loading…</p></div>
   </section>
 </main>
@@ -520,30 +526,29 @@ async function loadAccuracy() {
       $("#acc").innerHTML = '<div class="card"><p class="mute" style="margin:0">No hand-labeled jobs yet. Run the labeling helper, then reload.</p></div>';
       return;
     }
-    const classes = ["live", "closed", "ghost", "repost"];
-    const rows = classes
-      .map((c) => {
-        const m = d.per_class[c];
-        return "<tr><td><span class=\"chip " + c + "\">" + c + "</span></td><td>" + pct(m.precision) + "</td><td>" + pct(m.recall) + "</td><td>" + pct(m.f1) + "</td><td>" + m.support + "</td></tr>";
-      })
-      .join("");
+    // Categories come from the evaluation payload itself (backend CLASSES), not a hardcoded list.
+    const classes = Object.keys(d.matrix);
     const matrix = classes
       .map(
         (a) =>
-          "<tr><th>" + a + "</th>" + classes.map((p) => '<td class="' + (a === p ? "hit" : "") + '">' + d.matrix[a][p] + "</td>").join("") + "</tr>"
+          "<tr><th>" + esc(a) + "</th>" + classes.map((p) => '<td class="' + (a === p ? "hit" : "") + '">' + d.matrix[a][p] + "</td>").join("") + "</tr>"
       )
       .join("");
-    const b = d.bad_filter;
+    const chips = classes.map((c) => '<span class="chip ' + esc(c) + '">' + esc(c) + "</span>").join("");
     $("#acc").innerHTML =
       '<div class="grid kpis">' +
-      '<div class="card kpi"><span>Labeled jobs</span><b>' + d.total + "</b></div>" +
-      '<div class="card kpi"><span>Accuracy</span><b>' + pct(d.accuracy) + "</b></div>" +
-      '<div class="card kpi"><span>Bad-job filter precision</span><b>' + pct(b.precision) + "</b><small>flagged jobs that really were dead or ghost</small></div>" +
-      '<div class="card kpi"><span>Bad-job filter recall</span><b>' + pct(b.recall) + "</b><small>dead or ghost jobs it caught</small></div></div>" +
+      '<div class="card kpi"><span>Jobs evaluated</span><b>' + num(d.total) + "</b><small>manually labeled sample</small></div>" +
+      '<div class="card kpi"><span>Prediction categories</span><b>' + classes.length + '</b><div class="chips">' + chips + "</div></div>" +
+      '<div class="card kpi"><span>Evaluation status</span><b style="font-size:20px;margin-top:6px">Validation in progress</b><small>benchmarks withheld until labels are validated</small></div></div>' +
       '<div class="grid two" style="margin-top:14px">' +
-      '<div class="card"><h3 style="margin-top:0">Per class</h3><table><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr>' + rows + "</table></div>" +
-      '<div class="card"><h3 style="margin-top:0">Confusion matrix</h3><table class="matrix"><tr><th>label ↓ / predicted →</th>' +
-      classes.map((c) => "<th>" + c + "</th>").join("") + "</tr>" + matrix + "</table></div></div>";
+      '<div class="card"><h3 style="margin-top:0">Initial evaluation snapshot — unvalidated labels</h3><table class="matrix"><tr><th>label ↓ / predicted →</th>' +
+      classes.map((c) => "<th>" + esc(c) + "</th>").join("") + "</tr>" + matrix + "</table>" +
+      '<p class="note">This matrix reflects the initial manually labeled sample of ' + num(d.total) + " jobs. The labels have not been independently validated, so it should not be read as a reliable measure of real-world model performance.</p></div>" +
+      '<div class="card method"><h3 style="margin-top:0">Evaluation methodology</h3>' +
+      '<p style="margin:0">Lively\'s predictions are compared against job listings that were reviewed and labeled by hand as one of: ' + classes.map(esc).join(", ") + ".</p>" +
+      "<ol><li>Sample jobs are drawn from the pipeline and reviewed manually.</li>" +
+      "<li>Each reviewed label is compared with Lively's prediction for the same job.</li>" +
+      "<li>Labeling guidelines and the validation process are being improved before any performance benchmarks are published.</li></ol></div></div>";
   } catch (e) {
     $("#acc").innerHTML = '<div class="err">' + esc(e.message) + "</div>";
   }

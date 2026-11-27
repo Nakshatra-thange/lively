@@ -2,22 +2,28 @@ import argparse
 import asyncio
 import csv
 import logging
+from pathlib import Path
 
 from .config import CONCURRENCY
 from .db import pool
 from .discover import run_discover
 from .liveness import Engine, store
-from .liveness.fetcher import make_client
 from .liveness.resolve import resolve
 from .liveness.runner import check_batch
 from .metrics import format_snapshot, serve, snapshot
 from .migrate import run_migrations
+from .polite.client import make_polite_client
+from .polite.errors import blocked_by
 from .redisx import close_redis
 from .sched.worker import Worker
 from .sources import SOURCES
 from .sync import run_sync
 
 STATES = ["new", "live", "suspect", "closed", "reposted"]
+
+SEEDS = Path(__file__).resolve().parent.parent / "seeds"
+BOOTSTRAP_KEY = "bootstrap_completed"
+BOOTSTRAP_LOCK = 727002
 
 
 async def seed(path):
@@ -39,6 +45,92 @@ async def seed(path):
                 values,
             )
     print(f"seeded {len(values)} rows")
+
+
+class BootstrapError(RuntimeError):
+    pass
+
+
+async def bootstrap_step(name, coro):
+    try:
+        return await coro
+    except BootstrapError:
+        raise
+    except Exception as exc:
+        raise BootstrapError(
+            f"bootstrap failed during {name}: {exc!r}; rerun `lively bootstrap` to resume"
+        ) from exc
+
+
+async def set_state(conn, key, value):
+    await conn.execute(
+        """
+        INSERT INTO app_state (key, value) VALUES (%s, %s)
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+        """,
+        (key, value),
+    )
+    await conn.commit()
+
+
+async def bootstrap(boards, candidates, concurrency=CONCURRENCY, force=False):
+    """One-time first-run setup: migrate, seed, discover, initial sync.
+
+    Skips if it already completed, or if the database already has companies
+    (an existing installation). Every step is additive (ON CONFLICT DO NOTHING
+    inserts, normal sync), so --force re-runs them without deleting anything.
+    """
+    await run_migrations()
+    async with pool.connection() as conn:
+        cur = await conn.execute("SELECT pg_try_advisory_lock(%s)", (BOOTSTRAP_LOCK,))
+        got_lock = (await cur.fetchone())[0]
+        await conn.commit()
+        if not got_lock:
+            raise SystemExit("another bootstrap is already running")
+        try:
+            cur = await conn.execute("SELECT key, value FROM app_state WHERE key LIKE 'bootstrap_%'")
+            state = dict(await cur.fetchall())
+            cur = await conn.execute("SELECT count(*) FROM companies")
+            companies = (await cur.fetchone())[0]
+            await conn.commit()
+
+            if not force and BOOTSTRAP_KEY in state:
+                print(f"bootstrap already completed ({state[BOOTSTRAP_KEY]}); use --force to run it again")
+                return "skipped"
+            if not force and companies and "bootstrap_started" not in state:
+                mark = "existing"
+                print(f"database already has {companies} companies; recording it as bootstrapped without changes")
+            else:
+                mark = "fresh"
+                await set_state(conn, "bootstrap_started", "1")
+                # Same politeness controls (robots, per-domain limiter, breaker) as the worker.
+                async with make_polite_client(concurrency) as client:
+                    await bootstrap_step("seed", seed(boards))
+                    found = await bootstrap_step(
+                        "discover", run_discover(candidates, concurrency, client=client)
+                    )
+                    totals = await bootstrap_step(
+                        "sync", run_sync(concurrency=concurrency, client=client)
+                    )
+                synced = totals["boards"] - totals.get("errors", 0) - totals.get("blocked", 0)
+                print(f"discovered {found} boards | initial sync {totals}")
+                if synced <= 0:
+                    raise BootstrapError(
+                        f"bootstrap failed during sync: 0 of {totals['boards']} boards synced "
+                        f"(errors {totals.get('errors', 0)}, blocked {totals.get('blocked', 0)}); "
+                        "check network/Redis, then rerun `lively bootstrap` to resume"
+                    )
+                if synced < totals["boards"]:
+                    print(f"warning: {totals['boards'] - synced} boards failed initial sync; "
+                          "workers will retry them on their sync schedule")
+
+            await set_state(conn, BOOTSTRAP_KEY, mark)
+            print(f"bootstrap complete ({mark})")
+            return mark
+        finally:
+            await conn.rollback()
+            await conn.execute("SELECT pg_advisory_unlock(%s)", (BOOTSTRAP_LOCK,))
+            await conn.commit()
 
 
 async def stats():
@@ -82,10 +174,16 @@ async def check_one(args):
     if job is None:
         print("job not found or link not supported")
         return
-    async with make_client(1) as client:
+    async with make_polite_client(1) as client:
         result = await Engine(client).check(job)
+    blocked = blocked_by(result)
+    if blocked:
+        show(job, result, None)
+        print(f"\n  BLOCKED by politeness controls ({blocked}); nothing was saved, retry later")
+        return blocked
     new_state = await store.save_result(job, result)
     show(job, result, new_state)
+    return result.verdict
 
 
 async def dispatch(args):
@@ -106,6 +204,8 @@ async def dispatch(args):
             await stats()
         elif args.command == "migrate":
             await run_migrations()
+        elif args.command == "bootstrap":
+            await bootstrap(args.boards, args.candidates, args.concurrency, args.force)
         elif args.command == "worker":
             await Worker(args.concurrency).run()
         elif args.command == "metrics":
@@ -146,6 +246,12 @@ def main():
     sub.add_parser("migrate")
     sub.add_parser("metrics")
 
+    p_boot = sub.add_parser("bootstrap")
+    p_boot.add_argument("--boards", default=str(SEEDS / "boards.csv"))
+    p_boot.add_argument("--candidates", default=str(SEEDS / "candidates.txt"))
+    p_boot.add_argument("--concurrency", type=int, default=CONCURRENCY)
+    p_boot.add_argument("--force", action="store_true")
+
     p_worker = sub.add_parser("worker")
     p_worker.add_argument("--concurrency", type=int, default=CONCURRENCY)
 
@@ -153,7 +259,11 @@ def main():
     p_serve.add_argument("--host", default="0.0.0.0")
     p_serve.add_argument("--port", type=int, default=9100)
 
-    asyncio.run(dispatch(parser.parse_args()))
+    try:
+        asyncio.run(dispatch(parser.parse_args()))
+    except BootstrapError as exc:
+        logging.getLogger("lively.bootstrap").error("%s", exc, exc_info=exc.__cause__)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

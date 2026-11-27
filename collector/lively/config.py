@@ -1,7 +1,8 @@
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://lively:lively@localhost:5432/lively")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://lively:lively@localhost:5433/lively")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_TIMEOUT = float(os.getenv("REDIS_TIMEOUT", "5"))
 CONCURRENCY = int(os.getenv("CONCURRENCY", "20"))
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "25"))
 USER_AGENT = os.getenv("USER_AGENT", "LivelyBot/0.1 (job liveness research)")

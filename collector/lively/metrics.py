@@ -1,5 +1,7 @@
 import asyncio
+import functools
 import json
+import logging
 import time
 
 from .config import TIME_SCALE
@@ -8,11 +10,41 @@ from .redisx import get_redis
 
 BUCKETS = ["<=1h", "<=6h", "<=1d", "<=3d", ">3d"]
 
+log = logging.getLogger("lively.metrics")
+LOG_EVERY = 60.0
+_failures = {}
+
+
+def best_effort(fn):
+    """Metrics are observability, not part of the pipeline: a recording failure
+    (e.g. Redis down) is logged and dropped, never raised into the caller.
+    Logs the first failure per metric, then at most once per LOG_EVERY seconds
+    with the number of failures since. CancelledError is not caught."""
+
+    @functools.wraps(fn)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await fn(*args, **kwargs)
+        except Exception as exc:
+            now = time.monotonic()
+            last, count = _failures.get(fn.__name__, (0.0, 0))
+            count += 1
+            if now - last >= LOG_EVERY:
+                log.warning("metrics.%s failed (%d failures since last report): %r",
+                            fn.__name__, count, exc)
+                _failures[fn.__name__] = (now, 0)
+            else:
+                _failures[fn.__name__] = (last, count)
+            return None
+
+    return wrapper
+
 
 def _minute():
     return int(time.time() // 60)
 
 
+@best_effort
 async def count_request(host, error):
     pipe = get_redis().pipeline()
     pipe.hincrby("m:req", host, 1)
@@ -21,10 +53,12 @@ async def count_request(host, error):
     await pipe.execute()
 
 
+@best_effort
 async def count_blocked(kind, host):
     await get_redis().hincrby(f"m:blocked:{kind}", host, 1)
 
 
+@best_effort
 async def record_check(verdict, closed_now):
     minute = _minute()
     pipe = get_redis().pipeline()
@@ -38,22 +72,27 @@ async def record_check(verdict, closed_now):
     await pipe.execute()
 
 
+@best_effort
 async def count_reclaimed(n):
     await get_redis().incrby("m:reclaimed", n)
 
 
+@best_effort
 async def count_lost_lease():
     await get_redis().incr("m:lost")
 
 
+@best_effort
 async def count_deferred():
     await get_redis().incr("m:deferred")
 
 
+@best_effort
 async def count_worker_error(kind):
     await get_redis().hincrby("m:worker_errors", kind, 1)
 
 
+@best_effort
 async def count_sync(stats):
     pipe = get_redis().pipeline()
     pipe.incr("m:syncs")

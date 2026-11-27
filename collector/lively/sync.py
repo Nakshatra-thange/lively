@@ -1,12 +1,12 @@
 import asyncio
+import contextlib
 import logging
 from collections import Counter
 
-import httpx
-
-from .config import CONCURRENCY, FAIL_DEACTIVATE_AFTER, HTTP_TIMEOUT, USER_AGENT
+from .config import CONCURRENCY, FAIL_DEACTIVATE_AFTER
 from .db import pool
 from .normalize import content_hash, fingerprint
+from .polite.client import make_polite_client
 from .polite.errors import Blocked
 from .sources import SOURCES
 
@@ -179,7 +179,7 @@ async def sync_company(client, company):
     return dict(stats)
 
 
-async def run_sync(source=None, limit=None, stale_hours=0, concurrency=CONCURRENCY):
+async def run_sync(source=None, limit=None, stale_hours=0, concurrency=CONCURRENCY, client=None):
     query = "SELECT id, source::text, slug FROM companies WHERE active"
     params = []
     if source:
@@ -202,12 +202,9 @@ async def run_sync(source=None, limit=None, stale_hours=0, concurrency=CONCURREN
     done = 0
     sem = asyncio.Semaphore(concurrency)
 
-    async with httpx.AsyncClient(
-        timeout=HTTP_TIMEOUT,
-        headers={"User-Agent": USER_AGENT},
-        follow_redirects=True,
-        limits=httpx.Limits(max_connections=concurrency * 2),
-    ) as client:
+    # Same politeness controls (SSRF guard, robots, limiter, breaker) as the worker.
+    session = make_polite_client(concurrency) if client is None else contextlib.nullcontext(client)
+    async with session as client:
 
         async def worker(company):
             nonlocal done
@@ -221,3 +218,10 @@ async def run_sync(source=None, limit=None, stale_hours=0, concurrency=CONCURREN
         await asyncio.gather(*(worker(c) for c in companies))
 
     log.info("finished | %s", dict(totals))
+    if totals.get("blocked"):
+        log.warning(
+            "%d boards were blocked by politeness controls (circuit open, throttled, "
+            "robots or Redis unavailable) and were not synced or counted as failures; "
+            "rerun later", totals["blocked"],
+        )
+    return {"boards": len(companies), **totals}

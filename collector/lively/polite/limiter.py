@@ -1,9 +1,11 @@
 import asyncio
 import random
 
+from redis.exceptions import RedisError
+
 from ..config import DOMAIN_BURST, DOMAIN_RPS, MAX_THROTTLE_WAIT
 from ..redisx import get_redis, script
-from .errors import Throttled
+from .errors import PolitenessUnavailable, Throttled
 
 LUA = """
 local t = redis.call('TIME')
@@ -39,8 +41,12 @@ class Limiter:
         self.burst = burst
 
     async def acquire(self, host):
-        run = script("limiter", LUA)
-        wait = await run(keys=[f"rl:{host}", f"pen:{host}"], args=[self.rate, self.burst])
+        try:
+            run = script("limiter", LUA)
+            wait = await run(keys=[f"rl:{host}", f"pen:{host}"], args=[self.rate, self.burst])
+        except RedisError as exc:
+            # Fail closed: without the shared bucket we cannot bound the request rate.
+            raise PolitenessUnavailable(f"rate limiter unavailable for {host}: {exc}") from exc
         if wait <= 0:
             return 0
         seconds = wait / 1000.0
