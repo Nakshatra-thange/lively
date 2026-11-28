@@ -136,7 +136,8 @@ Starting Compose keeps the services and workers running. The scheduler is applic
 
 The key choice was to persist each listing's history instead of treating every crawl as a disposable snapshot.
 
-<img width="344" height="544" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/5640199b-f8cf-41fd-9b5d-9e4fe52cac71" />
+
+<img width="480" height="500" alt="Screenshot 2026-11-28 at 11 18 28 AM" src="https://github.com/user-attachments/assets/087d808d-d832-466c-9074-4ab593b421df" />
 
 
 ### Stage 2: Multi-signal liveness engine
@@ -166,6 +167,9 @@ $$N = \sum_{live} e_i - \sum_{closed} e_j \qquad P_{live} = \frac{1}{1 + e^{-N}}
 
 **Caveat:** the weights and thresholds are hand-set, not learned or calibrated, so these are heuristic scores, not literal probabilities. Signals are also treated as independent when they are not.
 
+<img width="620" height="613" alt="Screenshot 2026-11-28 at 11 40 15 AM" src="https://github.com/user-attachments/assets/82056d68-b965-4fd6-ad27-85ea24338a9f" />
+
+
 ### Stage 3: Adaptive scheduling and worker reliability
 
 Each job stores its next due time and check interval $I$. An unchanged job is checked half as often, and a changed one twice as often:
@@ -184,6 +188,13 @@ $$\text{saved} = \Bigl(1 - \tfrac{\sum_j 86400 / I_j}{N}\Bigr) \times 100\%$$
 This is negative right after a reset, while every job restarts at the base interval and only backs off as it stays stable. It reached 79.4% in an earlier steady-state run.
 
 **Crash safety.** Workers claim jobs with `FOR UPDATE SKIP LOCKED` and a lease token that a heartbeat renews. If a worker dies, the lease expires and another worker reclaims the job. A late worker finds its token gone and discards its result. A unique index on `(job_id, lease_token)` allows only one recorded result per lease, so checking is at-least-once and recording is exactly-once.
+
+1. for scheduling 
+<img width="522" height="565" alt="mermaid-diagram (2)" src="https://github.com/user-attachments/assets/7040a241-b5a7-401f-9962-e6fd0ae2d7f6" />
+
+2. for politness
+<img width="522" height="565" alt="Screenshot 2026-11-28 at 12 07 34 PM" src="https://github.com/user-attachments/assets/c66635f8-d2c7-4256-a1db-5080e5446e7a" />
+
 
 ### Stage 4: Ghost and repost analysis
 
@@ -204,6 +215,9 @@ $$\text{ghost\_score} = \min\Bigl(1,\ \sum_k p_k\Bigr)$$
 | Very short description, company relists many roles | 0.05 to 0.10 |
 
 **Predicted label:** `closed` if the job is closed or suspect, `ghost` if the score is at least 0.60, `repost` if it is a repost, otherwise `live`. Because a 365-day-old listing scores 0.65 from age alone, the ghost label is currently driven largely by age.
+
+<img width="522" height="565" alt="mermaid-diagram (3)" src="https://github.com/user-attachments/assets/86bead54-7a5f-4da9-8af6-3fa079cb3407" />
+
 
 ### Stage 5: Evaluation, dashboard and operational hardening
 
