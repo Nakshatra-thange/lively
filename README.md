@@ -136,7 +136,7 @@ Starting Compose keeps the services and workers running. The scheduler is applic
 
 The key choice was to persist each listing's history instead of treating every crawl as a disposable snapshot.
 
-<img width="544" height="544" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/5640199b-f8cf-41fd-9b5d-9e4fe52cac71" />
+<img width="344" height="544" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/5640199b-f8cf-41fd-9b5d-9e4fe52cac71" />
 
 
 ### Stage 2: Multi-signal liveness engine
