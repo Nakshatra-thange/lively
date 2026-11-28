@@ -96,7 +96,18 @@ The labeled set is stratified on purpose, so these are sample numbers, not popul
 
 
 - https://job-boards.greenhouse.io/vercel/jobs/6188898004
+
+<img width="1280" height="718" alt="Screenshot 2026-11-27 at 7 23 30 PM" src="https://github.com/user-attachments/assets/ebe4d912-39ea-4d23-ba95-0f9e76c86fc4" />
+
+
 - https://amazon.jobs/en/jobs/10612415/software-development-engineer-intern-2027-beijing
+
+<img width="1276" height="715" alt="Screenshot 2026-11-27 at 7 19 26 PM" src="https://github.com/user-attachments/assets/7347b574-18f7-49ae-bff2-b0a271b59e8b" />
+
+
 - https://www.micro1.ai/experts/opportunities
+
+  <img width="1272" height="713" alt="Screenshot 2026-11-27 at 7 19 42 PM" src="https://github.com/user-attachments/assets/fa473618-f306-4274-a70b-04b62bbdf38a" />
+
 
 
