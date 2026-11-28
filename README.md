@@ -193,7 +193,7 @@ This is negative right after a reset, while every job restarts at the base inter
 <img width="522" height="565" alt="mermaid-diagram (2)" src="https://github.com/user-attachments/assets/7040a241-b5a7-401f-9962-e6fd0ae2d7f6" />
 
 2. for politness
-<img width="522" height="565" alt="Screenshot 2026-11-28 at 12 07 34 PM" src="https://github.com/user-attachments/assets/c66635f8-d2c7-4256-a1db-5080e5446e7a" />
+<img width="622" height="565" alt="Screenshot 2026-11-28 at 12 07 34 PM" src="https://github.com/user-attachments/assets/c66635f8-d2c7-4256-a1db-5080e5446e7a" />
 
 
 ### Stage 4: Ghost and repost analysis
@@ -216,7 +216,7 @@ $$\text{ghost\_score} = \min\Bigl(1,\ \sum_k p_k\Bigr)$$
 
 **Predicted label:** `closed` if the job is closed or suspect, `ghost` if the score is at least 0.60, `repost` if it is a repost, otherwise `live`. Because a 365-day-old listing scores 0.65 from age alone, the ghost label is currently driven largely by age.
 
-<img width="522" height="565" alt="mermaid-diagram (3)" src="https://github.com/user-attachments/assets/86bead54-7a5f-4da9-8af6-3fa079cb3407" />
+<img width="622" height="565" alt="mermaid-diagram (3)" src="https://github.com/user-attachments/assets/86bead54-7a5f-4da9-8af6-3fa079cb3407" />
 
 
 ### Stage 5: Evaluation, dashboard and operational hardening
